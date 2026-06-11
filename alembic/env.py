@@ -2,7 +2,7 @@ import asyncio
 import os
 from logging.config import fileConfig
 
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
@@ -28,7 +28,12 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    connection.execute(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA_NAME}")
+    connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA_NAME}"))
+    try:
+        connection.commit()
+    except Exception:
+        # Some Connection implementations auto-commit; ignore if commit not supported
+        pass
     context.configure(connection=connection, target_metadata=target_metadata, version_table_schema=SCHEMA_NAME)
 
     with context.begin_transaction():

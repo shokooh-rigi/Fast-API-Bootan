@@ -65,7 +65,26 @@ def snapshot_to_response(snapshot: Any) -> dict[str, Any]:
     }
 
 
-@router.post("/shipments/{shipment_id}/quote", response_model=QuoteResponse)
+@router.post(
+    "/shipments/{shipment_id}/quote",
+    response_model=QuoteResponse,
+    responses={
+        422: {
+            "description": "Validation or unknown rate card",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": {
+                            "code": "UNKNOWN_RATE_CARD",
+                            "message": "The requested cargo_type and vehicle_type pair does not match any registered rate cards.",
+                            "correlation_id": "00000000-0000-0000-0000-000000000000"
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
 async def create_pricing_quote(
     shipment_id: str,
     request: QuoteRequest,
@@ -89,7 +108,39 @@ async def get_latest_quote(shipment_id: str, session: AsyncSession = Depends(get
     return quote_to_response(quote)
 
 
-@router.post("/shipments/{shipment_id}/confirm-snapshot", response_model=SnapshotResponse)
+@router.post(
+    "/shipments/{shipment_id}/confirm-snapshot",
+    response_model=SnapshotResponse,
+    responses={
+        409: {
+            "description": "Idempotency or snapshot conflict",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "idempotency_conflict": {
+                            "value": {
+                                "error": {
+                                    "code": "IDEMPOTENCY_CONFLICT",
+                                    "message": "Idempotency key conflict",
+                                    "correlation_id": "00000000-0000-0000-0000-000000000000"
+                                }
+                            }
+                        },
+                        "snapshot_exists": {
+                            "value": {
+                                "error": {
+                                    "code": "SNAPSHOT_ALREADY_EXISTS",
+                                    "message": "A snapshot already exists for this shipment",
+                                    "correlation_id": "00000000-0000-0000-0000-000000000000"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
 async def confirm_snapshot(
     shipment_id: str,
     request: Request,
@@ -100,7 +151,10 @@ async def confirm_snapshot(
         raise ConflictError("IDEMPOTENCY_CONFLICT", "Missing Idempotency-Key header")
 
     correlation_id = get_correlation_id(request)
-    request_body = None
+    try:
+        request_body = await request.json()
+    except Exception:
+        request_body = {}
     request_path = request.url.path
     request_method = request.method
     redis_publisher = get_redis_publisher()

@@ -105,7 +105,7 @@ async def test_quote_unknown_rate_card(seeded_db, client):
         },
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-    assert response.json()["error"]["code"] == "UNKNOWN"
+    assert response.json()["error"]["code"] == "UNKNOWN_RATE_CARD"
 
 
 @pytest.mark.anyio
@@ -138,6 +138,37 @@ async def test_confirm_snapshot_idempotency(seeded_db, client):
     )
     assert second.status_code == status.HTTP_200_OK
     assert second.json()["snapshot_id"] == snapshot_id
+
+
+@pytest.mark.anyio
+async def test_confirm_snapshot_idempotency_key_conflict(seeded_db, client):
+    quote_response = await client.post(
+        "/api/v1/pricing/shipments/shipment-555/quote",
+        json={
+            "inputs": {
+                "distance_km": 15,
+                "stop_count": 1,
+                "cargo_type": "general",
+                "vehicle_type": "single",
+            },
+            "force_recalculate": False,
+        },
+    )
+    assert quote_response.status_code == status.HTTP_200_OK
+
+    key = str(uuid.uuid4())
+    response = await client.post(
+        "/api/v1/pricing/shipments/shipment-555/confirm-snapshot",
+        headers={"Idempotency-Key": key},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+    conflict = await client.post(
+        "/api/v1/pricing/shipments/shipment-999/confirm-snapshot",
+        headers={"Idempotency-Key": key},
+    )
+    assert conflict.status_code == status.HTTP_409_CONFLICT
+    assert conflict.json()["error"]["code"] == "IDEMPOTENCY_CONFLICT"
 
 
 @pytest.mark.anyio

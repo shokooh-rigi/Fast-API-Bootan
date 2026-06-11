@@ -30,7 +30,7 @@ class ValidationError(ApiError):
 
 class UnknownRateCardError(ValidationError):
     def __init__(self, message: str) -> None:
-        super().__init__("UNKNOWN", message)
+        super().__init__("UNKNOWN_RATE_CARD", message)
 
 
 class QuoteNotFoundError(NotFoundError):
