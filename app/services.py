@@ -181,7 +181,7 @@ def build_snapshot_response(snapshot: PriceSnapshot) -> dict[str, Any]:
         "commission_amount": snapshot.commission_amount,
         "driver_net_amount": snapshot.driver_net_amount,
         "currency": snapshot.currency,
-        "confirmed_at": snapshot.confirmed_at,
+        "confirmed_at": snapshot.confirmed_at.isoformat() if snapshot.confirmed_at is not None else None,
     }
 
 
