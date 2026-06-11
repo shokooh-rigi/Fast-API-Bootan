@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.python-version
+.venv/
+env/
+venv/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Environment files
+.env
+.env.*
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.orig
+
+# Runtime files
+*.log
+*.pid
+
+# Coverage reports
+.coverage
+.coverage.*
+htmlcov/
+
+# mypy
+.mypy_cache/
+.pytype/
+
+# Docker
+docker-compose.override.yml
+
+# OS files
+.DS_Store
